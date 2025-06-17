@@ -1,6 +1,8 @@
 package config
 
 import (
+	"path/filepath"
+
 	model "github.com/WindyDante/toolpost/internal/model/common"
 	"github.com/spf13/viper"
 )
@@ -24,25 +26,22 @@ type ConfigUtil struct {
 	Database DatabaseConfig
 }
 
+func loadConfigFile(filename string, target any) {
+	v := viper.New()
+	v.SetConfigFile(filepath.Join(model.CONFIG_FILE_PREFIX, filename))
+	v.SetConfigType(model.CONFIG_TYPE_YAML)
+	err := v.ReadInConfig()
+	if err != nil {
+		panic(model.READ_CONFIG_PANIC + ": " + err.Error())
+	}
+	if err = v.Unmarshal(target); err != nil {
+		panic(model.READ_CONFIG_PANIC + ": " + err.Error())
+	}
+}
+
 func LoadConfig() {
-	viperContainer := viper.New()
-	viperContainer.SetConfigFile("config/server.yaml")
-	viperContainer.SetConfigType("yaml")
-	err := viperContainer.ReadInConfig()
-	if err != nil {
-		panic(model.READ_CONFIG_PANIC + ": " + err.Error())
-	}
-	if err = viperContainer.Unmarshal(&Config.Server); err != nil {
-		panic(model.READ_CONFIG_PANIC + ": " + err.Error())
-	}
-
-	viperContainer.SetConfigFile("config/database.yaml")
-	err = viperContainer.ReadInConfig()
-	if err != nil {
-		panic(model.READ_CONFIG_PANIC + ": " + err.Error())
-	}
-	if err = viperContainer.Unmarshal(&Config.Database); err != nil {
-		panic(model.READ_CONFIG_PANIC + ": " + err.Error())
-	}
-
+	// 加载服务器配置
+	loadConfigFile("server.yaml", &Config.Server)
+	// 加载数据库配置
+	loadConfigFile("database.yaml", &Config.Database)
 }
