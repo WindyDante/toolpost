@@ -1,0 +1,3 @@
+port: 6332
+host: "0.0.0.0"
+mode: "release" # "release" or "debug"

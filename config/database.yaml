@@ -1,0 +1,2 @@
+type: "sqlite"
+path: "data/share.db"
