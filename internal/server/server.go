@@ -24,7 +24,12 @@ func (s *Server) Init() {
 
 	config.LoadConfig() // 加载配置文件
 
-	fmt.Println("this is mode->" + config.Config.Server.Mode)
+	if config.Config.Server.Mode == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 }
 
 func (s *Server) Start() {
