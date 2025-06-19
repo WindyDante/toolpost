@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/WindyDante/toolpost/internal/config"
+	"github.com/WindyDante/toolpost/internal/database"
 	logUtil "github.com/WindyDante/toolpost/internal/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +30,8 @@ func (s *Server) Init() {
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	database.InitDatabase()
 
 }
 
