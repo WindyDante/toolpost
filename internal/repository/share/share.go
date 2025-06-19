@@ -6,7 +6,7 @@ type ShareRepository struct {
 	db *gorm.DB
 }
 
-func NewShareRepository(db *gorm.DB) *ShareRepository {
+func NewShareRepository(db *gorm.DB) ShareRepositoryInterface {
 	return &ShareRepository{
 		db: db,
 	}
