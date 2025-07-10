@@ -2,7 +2,8 @@ package share
 
 import (
 	"github.com/WindyDante/toolpost/internal/handler/res"
-	model "github.com/WindyDante/toolpost/internal/model/common"
+	commonModel "github.com/WindyDante/toolpost/internal/model/common"
+	shareModel "github.com/WindyDante/toolpost/internal/model/share"
 	"github.com/WindyDante/toolpost/internal/service/share"
 	"github.com/gin-gonic/gin"
 )
@@ -25,12 +26,13 @@ func (shareHandler *ShareHandler) GetShareByCode() gin.HandlerFunc {
 
 func (shareHandler *ShareHandler) UploadAnyFile() gin.HandlerFunc {
 	return res.Execute(func(ctx *gin.Context) res.Response {
-		//TODO: 需要验证上传的是文本数据还是文件数据或者说文本+文件
+		var uploadFile shareModel.UploadFile
+		ctx.BindJSON(&uploadFile)
 		// 提取上传的File数据
 		file, err := ctx.FormFile("file")
 		if err != nil {
 			return res.Response{
-				Msg: model.INVALID_REQUEST_BODY,
+				Msg: commonModel.INVALID_REQUEST_BODY,
 				Err: err,
 			}
 		}

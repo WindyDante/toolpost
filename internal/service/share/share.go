@@ -11,3 +11,7 @@ func NewShareService(shareRepository share.ShareRepositoryInterface) ShareServic
 		shareRepository: shareRepository,
 	}
 }
+
+func (s *ShareService) UploadAnyFile(file interface{}) error {
+	return nil
+}
