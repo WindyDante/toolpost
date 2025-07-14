@@ -43,8 +43,9 @@ func saveUploadFile(file *multipart.FileHeader) (string, error) {
 	// 生成随机ID
 	uuid := UUID()
 
-	// 保留原文件拓展名
+	// 获取文件拓展名
 	ext := filepath.Ext(file.Filename)
+	// 移除对应的文件后缀名,获得纯文件名
 	nameWithoutExt := strings.TrimSuffix(file.Filename, ext)
 	fileName := fmt.Sprintf("%s_%s%s", nameWithoutExt, uuid, ext)
 	filePath := filepath.Join(DIRECTORY_PATH, fileName)
