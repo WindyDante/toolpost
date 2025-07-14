@@ -5,6 +5,10 @@ import (
 
 	"github.com/WindyDante/toolpost/internal/config"
 	"github.com/WindyDante/toolpost/internal/database"
+	"github.com/WindyDante/toolpost/internal/di"
+	model "github.com/WindyDante/toolpost/internal/model/common"
+	"github.com/WindyDante/toolpost/internal/router"
+	util "github.com/WindyDante/toolpost/internal/util/err"
 	logUtil "github.com/WindyDante/toolpost/internal/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -33,6 +37,15 @@ func (s *Server) Init() {
 
 	database.InitDatabase()
 
+	handlers, err := di.BuildHandler(database.DB)
+	if err != nil {
+		util.HandlePanicError(&model.ServerError{
+			Msg: model.INIT_HANDLERS_PANIC,
+			Err: err,
+		})
+	}
+
+	router.SetupRoute(s.GinEngine, handlers) // 设置路由
 }
 
 func (s *Server) Start() {
