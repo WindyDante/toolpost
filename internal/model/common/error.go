@@ -7,7 +7,7 @@ type ServerError struct {
 
 // 失败的常量
 const (
-	INVALID_REQUEST_BODY   = "无效的请求体"
+	INVALID_REQUEST_FORM   = "无效的表单"
 	INVALID_SHARE_CODE     = "无效的分享码"
 	FILE_UPLOAD            = "文件上传失败"
 	FILE_MAX_SIZE_EXCEEDED = "文件大小超过限制(500MB)"

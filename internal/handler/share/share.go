@@ -20,7 +20,10 @@ func NewShareHandler(shareService share.ShareServiceInterface) *ShareHandler {
 
 func (shareHandler *ShareHandler) GetShareByCode() gin.HandlerFunc {
 	return res.Execute(func(ctx *gin.Context) res.Response {
-		return res.Response{}
+		return res.Response{
+			Msg:  commonModel.SUCCESS_MESSAGE,
+			Data: "NULL",
+		}
 	})
 }
 
@@ -28,10 +31,10 @@ func (shareHandler *ShareHandler) UploadAnyFile() gin.HandlerFunc {
 	return res.Execute(func(ctx *gin.Context) res.Response {
 		// 绑定请求体到 UploadFile 结构体
 		var uploadFile shareModel.UploadFile
-		err := ctx.BindJSON(&uploadFile)
+		err := ctx.ShouldBind(&uploadFile)
 		if err != nil {
 			return res.Response{
-				Msg: commonModel.INVALID_REQUEST_BODY,
+				Msg: commonModel.INVALID_REQUEST_FORM,
 				Err: err,
 			}
 		}
