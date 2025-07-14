@@ -26,6 +26,7 @@ func (shareHandler *ShareHandler) GetShareByCode() gin.HandlerFunc {
 
 func (shareHandler *ShareHandler) UploadAnyFile() gin.HandlerFunc {
 	return res.Execute(func(ctx *gin.Context) res.Response {
+		// 绑定请求体到 UploadFile 结构体
 		var uploadFile shareModel.UploadFile
 		err := ctx.BindJSON(&uploadFile)
 		if err != nil {
@@ -34,7 +35,17 @@ func (shareHandler *ShareHandler) UploadAnyFile() gin.HandlerFunc {
 				Err: err,
 			}
 		}
-		shareHandler.shareService.UploadAnyFile(uploadFile)
-		return res.Response{}
+		// 上传文件
+		imageUrl, err := shareHandler.shareService.UploadAnyFile(uploadFile)
+		if err != nil {
+			return res.Response{
+				Msg: err.Error(),
+				Err: err,
+			}
+		}
+		return res.Response{
+			Msg:  commonModel.SUCCESS_MESSAGE,
+			Data: imageUrl,
+		}
 	})
 }

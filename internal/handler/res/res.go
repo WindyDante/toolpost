@@ -20,7 +20,7 @@ func Execute(fn func(ctx *gin.Context) Response) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		res := fn(ctx)
 		if res.Err != nil {
-			ctx.JSON(http.StatusOK, common.Fail[string](
+			ctx.JSON(http.StatusInternalServerError, common.Fail[string](
 				util.HandleError(&common.ServerError{
 					Msg: res.Msg,
 					Err: res.Err,

@@ -6,6 +6,7 @@ import (
 	errModel "github.com/WindyDante/toolpost/internal/model/common"
 	model "github.com/WindyDante/toolpost/internal/model/share"
 	"github.com/WindyDante/toolpost/internal/repository/share"
+	util "github.com/WindyDante/toolpost/internal/util/storage"
 )
 
 type ShareService struct {
@@ -23,8 +24,13 @@ func (s *ShareService) UploadAnyFile(file model.UploadFile) (string, error) {
 		// 限制文件大小为500MB,不写为常量,仅在此处使用
 		return "", errors.New(errModel.FILE_MAX_SIZE_EXCEEDED)
 	}
+	// 调用上传的本地工具类,上传后返回url自动拼接
+	url, err := util.UploadFile(file.File)
+	if err != nil {
+		return "", err
+	}
+
 	// TODO:保存到数据库
 
-	// TODO：以保存到数据库后的id来创建对应的目录，根据目录去获取目录下的文件或文件夹
-	return "", nil
+	return url, nil
 }
