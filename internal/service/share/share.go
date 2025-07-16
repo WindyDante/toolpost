@@ -31,6 +31,7 @@ func (s *ShareService) UploadAnyFile(file model.UploadFile) (string, error) {
 	}
 
 	// TODO:保存到数据库
+	// 保存信息
 
 	return url, nil
 }
