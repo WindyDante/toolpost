@@ -14,4 +14,5 @@ const (
 	NO_FILE_UPLOAD         = "没有上传文件"
 	SHARE_NOT_FOUND        = "分享不存在"
 	FILE_DIRECTORY_CREATE  = "初始化文件目录失败"
+	SHARE_EXPIRED          = "分享已过期"
 )

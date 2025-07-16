@@ -21,15 +21,21 @@ func NewShareHandler(shareService share.ShareServiceInterface) *ShareHandler {
 // 根据访问码获取分享信息
 func (shareHandler *ShareHandler) GetShareByCode() gin.HandlerFunc {
 	return res.Execute(func(ctx *gin.Context) res.Response {
+		code := ctx.Param("code")
 
-		// TODO:获取code
-
-		// TODO:获取分享信息
+		// 获取分享信息
+		url, err := shareHandler.shareService.GetShareByCode(code)
+		if err != nil {
+			return res.Response{
+				Msg: err.Error(),
+				Err: err,
+			}
+		}
 
 		// TODO:返回分享信息
 		return res.Response{
 			Msg:  commonModel.SUCCESS_MESSAGE,
-			Data: "NULL",
+			Data: url,
 		}
 	})
 }

@@ -2,6 +2,7 @@ package share
 
 import (
 	"errors"
+	"time"
 
 	errModel "github.com/WindyDante/toolpost/internal/model/common"
 	model "github.com/WindyDante/toolpost/internal/model/share"
@@ -17,6 +18,52 @@ func NewShareService(shareRepository share.ShareRepositoryInterface) ShareServic
 	return &ShareService{
 		shareRepository: shareRepository,
 	}
+}
+
+func (s *ShareService) GetShareByCode(code string) (string, error) {
+	// 获取分享信息
+	shareInfo, err := s.shareRepository.GetShareByCode(code)
+	if err != nil {
+		return "", err
+	}
+	// 如果没有找到分享信息
+	if shareInfo == nil {
+		return "", errors.New(errModel.SHARE_NOT_FOUND)
+	}
+	// 检查是否过期
+	if isExpired(shareInfo) {
+		return "", errors.New(errModel.SHARE_EXPIRED)
+	}
+
+}
+
+// 检查是否过期的辅助方法
+func isExpired(shareInfo *model.Share) bool {
+	// 如果 Expire 为 0，表示永不过期
+	if shareInfo.Expire == 0 {
+		return false
+	}
+
+	var duration time.Duration
+
+	// 根据过期单位转换为 time.Duration
+	switch shareInfo.ExpireUnit {
+	case 1: // 分钟
+		duration = time.Duration(shareInfo.Expire) * time.Minute
+	case 2: // 小时
+		duration = time.Duration(shareInfo.Expire) * time.Hour
+	case 3: // 天
+		duration = time.Duration(shareInfo.Expire) * 24 * time.Hour
+	default:
+		// 默认按分钟处理
+		duration = time.Duration(shareInfo.Expire) * time.Minute
+	}
+
+	// 计算过期时间
+	expireTime := shareInfo.CreatedAt.Add(duration)
+
+	// 检查是否已过期
+	return time.Now().After(expireTime)
 }
 
 func (s *ShareService) UploadAnyFile(file model.UploadFile) (string, error) {

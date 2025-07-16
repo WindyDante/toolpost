@@ -15,4 +15,5 @@ func SetupRoute(r *gin.Engine, h *di.Handlers) {
 
 	shareGroup := r.Group("/api")
 	shareGroup.POST("/upload", h.ShareHandler.UploadAnyFile())
+	shareGroup.GET("/share/:code", h.ShareHandler.GetShareByCode())
 }
