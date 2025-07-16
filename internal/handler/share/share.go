@@ -18,8 +18,15 @@ func NewShareHandler(shareService share.ShareServiceInterface) *ShareHandler {
 	}
 }
 
+// 根据访问码获取分享信息
 func (shareHandler *ShareHandler) GetShareByCode() gin.HandlerFunc {
 	return res.Execute(func(ctx *gin.Context) res.Response {
+
+		// TODO:获取code
+
+		// TODO:获取分享信息
+
+		// TODO:返回分享信息
 		return res.Response{
 			Msg:  commonModel.SUCCESS_MESSAGE,
 			Data: "NULL",
