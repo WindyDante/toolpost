@@ -20,6 +20,7 @@ func NewShareService(shareRepository share.ShareRepositoryInterface) ShareServic
 }
 
 func (s *ShareService) UploadAnyFile(file model.UploadFile) (string, error) {
+	var storageShare model.Share
 	if file.File.Size > int64(1024*1024*500) {
 		// 限制文件大小为500MB,不写为常量,仅在此处使用
 		return "", errors.New(errModel.FILE_MAX_SIZE_EXCEEDED)
@@ -30,8 +31,18 @@ func (s *ShareService) UploadAnyFile(file model.UploadFile) (string, error) {
 		return "", err
 	}
 
-	// TODO:保存到数据库
+	// 设置Share结构体的信息
+	storageShare = model.Share{
+		File:       url,
+		Expire:     file.ExpireTime,
+		ExpireUnit: file.ExpireUnit,
+		Text:       file.Text,
+	}
+
 	// 保存信息
+	if err := s.shareRepository.SaveShare(&storageShare); err != nil {
+		return "", err
+	}
 
 	return url, nil
 }
