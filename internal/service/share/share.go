@@ -2,11 +2,13 @@ package share
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	errModel "github.com/WindyDante/toolpost/internal/model/common"
 	model "github.com/WindyDante/toolpost/internal/model/share"
 	"github.com/WindyDante/toolpost/internal/repository/share"
+	cryptoUtil "github.com/WindyDante/toolpost/internal/util/crypto"
 	util "github.com/WindyDante/toolpost/internal/util/storage"
 )
 
@@ -35,6 +37,11 @@ func (s *ShareService) GetShareByCode(code string) (string, error) {
 		return "", errors.New(errModel.SHARE_EXPIRED)
 	}
 
+	key := cryptoUtil.EncryptShareCode(shareInfo.ID, shareInfo.Code)
+
+	downloadURL := fmt.Sprintf("/share/download?key=%s&code=%s", key, code)
+
+	return downloadURL, nil
 }
 
 // 检查是否过期的辅助方法
