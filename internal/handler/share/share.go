@@ -1,6 +1,8 @@
 package share
 
 import (
+	"fmt"
+
 	"github.com/WindyDante/toolpost/internal/handler/res"
 	commonModel "github.com/WindyDante/toolpost/internal/model/common"
 	shareModel "github.com/WindyDante/toolpost/internal/model/share"
@@ -31,8 +33,12 @@ func (shareHandler *ShareHandler) GetShareByCode() gin.HandlerFunc {
 				Err: err,
 			}
 		}
+		scheme := "http"
+		if ctx.Request.TLS != nil {
+			scheme = "https"
+		}
+		url = fmt.Sprintf("%s://%s%s", scheme, ctx.Request.Host, url)
 
-		// TODO:返回分享信息
 		return res.Response{
 			Msg:  commonModel.SUCCESS_MESSAGE,
 			Data: url,
