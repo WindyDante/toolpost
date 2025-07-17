@@ -5,6 +5,7 @@ import (
 
 	"github.com/WindyDante/toolpost/internal/config"
 	commonModel "github.com/WindyDante/toolpost/internal/model/common"
+	shareModel "github.com/WindyDante/toolpost/internal/model/share"
 	util "github.com/WindyDante/toolpost/internal/util/err"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -34,4 +35,22 @@ func InitDatabase() {
 			})
 		}
 	}
+
+	if err := MigrateDB(); err != nil {
+		util.HandlePanicError(&commonModel.ServerError{
+			Msg: commonModel.DATABASE_MIGRATE_ERROR,
+			Err: err,
+		})
+	}
+}
+
+// MigrateDB 执行数据库迁移
+func MigrateDB() error {
+	models := []interface{}{
+		shareModel.Share{},
+	}
+
+	return DB.AutoMigrate(
+		models...,
+	)
 }
