@@ -26,6 +26,7 @@ func Execute(fn func(ctx *gin.Context) Response) gin.HandlerFunc {
 					Err: res.Err,
 				}),
 			))
+			return
 		}
 
 		if res.Code != 0 {
