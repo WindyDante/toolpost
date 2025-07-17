@@ -1,8 +1,10 @@
 package share
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	errModel "github.com/WindyDante/toolpost/internal/model/common"
@@ -10,7 +12,6 @@ import (
 	"github.com/WindyDante/toolpost/internal/repository/share"
 	cryptoUtil "github.com/WindyDante/toolpost/internal/util/crypto"
 	util "github.com/WindyDante/toolpost/internal/util/storage"
-	"golang.org/x/exp/rand"
 )
 
 type ShareService struct {
@@ -48,7 +49,7 @@ func (s *ShareService) GetDownloadUrl(key, code string) (string, error) {
 	// 获取文件路径和文件名
 	filePath := shareInfo.File
 
-	return filePath, errors.New(errModel.INVALID_REQUEST_PARAMS)
+	return filePath, nil
 }
 
 func (s *ShareService) GetShareByCode(code string) (string, error) {
@@ -80,6 +81,7 @@ func (s *ShareService) GetShareByCode(code string) (string, error) {
 
 // 检查是否过期的辅助方法
 func isExpired(shareInfo *model.Share) bool {
+
 	// 如果 Expire 为 0，表示永不过期
 	if shareInfo.Expire == 0 {
 		return false
@@ -101,10 +103,10 @@ func isExpired(shareInfo *model.Share) bool {
 	}
 
 	// 计算过期时间
-	expireTime := shareInfo.CreatedAt.Add(duration)
+	expireTime := shareInfo.CreatedAt.Add(8*time.Hour + duration)
 
 	// 检查是否已过期
-	return time.Now().After(expireTime)
+	return time.Now().Add(8 * time.Hour).After(expireTime)
 }
 
 func (s *ShareService) UploadAnyFile(file model.UploadFile) (model.ShareVo, error) {
@@ -119,6 +121,15 @@ func (s *ShareService) UploadAnyFile(file model.UploadFile) (model.ShareVo, erro
 		return model.ShareVo{}, err
 	}
 
+	// 定义随机数的最大值 (1,000,000)
+	max := big.NewInt(1000000)
+
+	// 生成一个 [0, max) 区间的密码学安全的随机整数
+	n, _ := rand.Int(rand.Reader, max)
+
+	// 使用 fmt.Sprintf 格式化为6位数字，不足6位的前面补0
+	code := fmt.Sprintf("%06d", n.Int64())
+
 	// 设置Share结构体的信息
 	storageShare = model.Share{
 		ID:         cryptoUtil.GenerateUUID(),
@@ -126,7 +137,7 @@ func (s *ShareService) UploadAnyFile(file model.UploadFile) (model.ShareVo, erro
 		Expire:     file.ExpireTime,
 		ExpireUnit: file.ExpireUnit,
 		Text:       file.Text,
-		Code:       fmt.Sprintf("%06d", rand.Intn(1000000)), // 生成6位随机数作为访问码
+		Code:       code, // 生成6位随机数作为访问码
 	}
 
 	// 保存信息
