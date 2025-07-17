@@ -8,4 +8,7 @@ type ShareHandlerInterface interface {
 
 	// 上传文件
 	UploadAnyFile() gin.HandlerFunc
+
+	// 文件路由下载
+	DownloadFile() gin.HandlerFunc
 }

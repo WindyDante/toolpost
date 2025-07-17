@@ -7,7 +7,7 @@ import (
 
 type Share struct {
 	ID         string    `json:"id" gorm:"primaryKey"`
-	File       string    `json:"url" gorm:"unique;not null"` // URL是一个文件路径或文本内容
+	File       string    `json:"url" gorm:"unique;not null"` // URL是一个文件路径
 	Text       string    `json:"text"`                       // 文本内容
 	Expire     int64     `json:"expire"`
 	ExpireUnit int64     `json:"expire_unit"` // 过期单位，秒、分钟、小时等

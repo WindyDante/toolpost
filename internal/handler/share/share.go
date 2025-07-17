@@ -20,6 +20,35 @@ func NewShareHandler(shareService share.ShareServiceInterface) *ShareHandler {
 	}
 }
 
+// 获取key和code分析来比对下载路径是否正确
+func (shareHandler *ShareHandler) DownloadFile() gin.HandlerFunc {
+	return gin.HandlerFunc(func(ctx *gin.Context) {
+		// 获取查询参数中的 key 和 code
+		key := ctx.Query("key")
+		code := ctx.Query("code")
+		if key == "" || code == "" {
+			ctx.JSON(0, gin.H{
+				"msg": commonModel.INVALID_REQUEST_PARAMS,
+			})
+		}
+		// 调用服务层方法获取下载链接
+		filePath, err := shareHandler.shareService.GetDownloadUrl(key, code)
+		if err != nil {
+			ctx.JSON(0, gin.H{
+				"msg": err.Error(),
+			})
+		}
+		// 设置下载响应头
+		ctx.Header("Content-Description", "File Transfer")
+		ctx.Header("Content-Transfer-Encoding", "binary")
+		ctx.Header("Content-Disposition", "attachment; filename=\""+filePath+"\"")
+		ctx.Header("Content-Type", "application/octet-stream")
+
+		// 返回文件内容
+		ctx.File(filePath)
+	})
+}
+
 // 根据访问码获取分享信息
 func (shareHandler *ShareHandler) GetShareByCode() gin.HandlerFunc {
 	return res.Execute(func(ctx *gin.Context) res.Response {

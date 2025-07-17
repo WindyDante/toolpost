@@ -22,6 +22,34 @@ func NewShareService(shareRepository share.ShareRepositoryInterface) ShareServic
 	}
 }
 
+func (s *ShareService) GetDownloadUrl(key, code string) (string, error) {
+	// 校验key是否正确
+	shareInfo, err := s.shareRepository.GetShareByCode(code)
+	if err != nil {
+		return "", err
+	}
+	// 如果没有找到分享信息
+	if shareInfo == nil {
+		return "", errors.New(errModel.SHARE_NOT_FOUND)
+	}
+	// 检查是否过期
+	if isExpired(shareInfo) {
+		return "", errors.New(errModel.SHARE_EXPIRED)
+	}
+
+	encryptKey := cryptoUtil.EncryptShareCode(shareInfo.ID, shareInfo.Code)
+
+	if encryptKey != key {
+		// 如果key不匹配
+		return "", errors.New(errModel.KEY_NOT_MATCH)
+	}
+
+	// 获取文件路径和文件名
+	filePath := shareInfo.File
+
+	return filePath, errors.New(errModel.INVALID_REQUEST_PARAMS)
+}
+
 func (s *ShareService) GetShareByCode(code string) (string, error) {
 	// 获取分享信息
 	shareInfo, err := s.shareRepository.GetShareByCode(code)
