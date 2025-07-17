@@ -25,4 +25,5 @@ type UploadFile struct {
 
 type ShareVo struct {
 	FileUrl string `json:"fileUrl"` // 文件URL
+	Code    string `json:"code"`    // 访问码
 }

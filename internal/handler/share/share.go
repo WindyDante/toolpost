@@ -87,7 +87,7 @@ func (shareHandler *ShareHandler) UploadAnyFile() gin.HandlerFunc {
 			}
 		}
 		// 上传文件
-		imageUrl, err := shareHandler.shareService.UploadAnyFile(uploadFile)
+		vo, err := shareHandler.shareService.UploadAnyFile(uploadFile)
 		if err != nil {
 			return res.Response{
 				Msg: err.Error(),
@@ -96,7 +96,7 @@ func (shareHandler *ShareHandler) UploadAnyFile() gin.HandlerFunc {
 		}
 		return res.Response{
 			Msg:  commonModel.SUCCESS_MESSAGE,
-			Data: imageUrl,
+			Data: vo,
 		}
 	})
 }

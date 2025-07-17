@@ -15,6 +15,12 @@ func NewShareRepository(db *gorm.DB) ShareRepositoryInterface {
 	}
 }
 
+func (shareRepository *ShareRepository) UpdateByStatus(id string) error {
+	return shareRepository.db.Model(&model.Share{}).
+		Where("id = ?", id).
+		Update("status", 1).Error
+}
+
 func (shareRepository *ShareRepository) GetShareByCode(code string) (*model.Share, error) {
 	var share model.Share
 	if err := shareRepository.db.Where("code = ?", code).First(&share).Error; err != nil {

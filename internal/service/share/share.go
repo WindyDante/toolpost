@@ -10,6 +10,7 @@ import (
 	"github.com/WindyDante/toolpost/internal/repository/share"
 	cryptoUtil "github.com/WindyDante/toolpost/internal/util/crypto"
 	util "github.com/WindyDante/toolpost/internal/util/storage"
+	"golang.org/x/exp/rand"
 )
 
 type ShareService struct {
@@ -69,6 +70,11 @@ func (s *ShareService) GetShareByCode(code string) (string, error) {
 
 	downloadURL := fmt.Sprintf("/share/download?key=%s&code=%s", key, code)
 
+	// 更新访问次数
+	if err := s.shareRepository.UpdateByStatus(shareInfo.ID); err != nil {
+		return "", err
+	}
+
 	return downloadURL, nil
 }
 
@@ -101,30 +107,35 @@ func isExpired(shareInfo *model.Share) bool {
 	return time.Now().After(expireTime)
 }
 
-func (s *ShareService) UploadAnyFile(file model.UploadFile) (string, error) {
+func (s *ShareService) UploadAnyFile(file model.UploadFile) (model.ShareVo, error) {
 	var storageShare model.Share
 	if file.File.Size > int64(1024*1024*500) {
 		// 限制文件大小为500MB,不写为常量,仅在此处使用
-		return "", errors.New(errModel.FILE_MAX_SIZE_EXCEEDED)
+		return model.ShareVo{}, errors.New(errModel.FILE_MAX_SIZE_EXCEEDED)
 	}
 	// 调用上传的本地工具类,上传后返回url自动拼接
 	url, err := util.UploadFile(file.File)
 	if err != nil {
-		return "", err
+		return model.ShareVo{}, err
 	}
 
 	// 设置Share结构体的信息
 	storageShare = model.Share{
+		ID:         cryptoUtil.GenerateUUID(),
 		File:       url,
 		Expire:     file.ExpireTime,
 		ExpireUnit: file.ExpireUnit,
 		Text:       file.Text,
+		Code:       fmt.Sprintf("%06d", rand.Intn(1000000)), // 生成6位随机数作为访问码
 	}
 
 	// 保存信息
 	if err := s.shareRepository.SaveShare(&storageShare); err != nil {
-		return "", err
+		return model.ShareVo{}, err
 	}
 
-	return url, nil
+	return model.ShareVo{
+		FileUrl: url,
+		Code:    storageShare.Code,
+	}, nil
 }
