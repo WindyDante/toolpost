@@ -127,8 +127,12 @@ func (s *ShareService) UploadAnyFile(file model.UploadFile) (model.ShareVo, erro
 	// 生成一个 [0, max) 区间的密码学安全的随机整数
 	n, _ := rand.Int(rand.Reader, max)
 
-	// 使用 fmt.Sprintf 格式化为6位数字，不足6位的前面补0
-	code := fmt.Sprintf("%06d", n.Int64())
+	// 若code不为空，是有自定义code
+	// 否则使用 fmt.Sprintf 格式化为6位数字，不足6位的前面补0
+	code := file.Code
+	if file.Code == "" {
+		code = fmt.Sprintf("%06d", n.Int64())
+	}
 
 	// 设置Share结构体的信息
 	storageShare = model.Share{

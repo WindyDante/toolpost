@@ -19,8 +19,9 @@ type Share struct {
 type UploadFile struct {
 	File       *multipart.FileHeader `form:"file" `       // 非必须,文件
 	ExpireTime int64                 `form:"expireTime" ` // 数量集
-	ExpireUnit int64                 `json:"expireUnit"`  // 过期单位，秒、分钟、小时等,无时间表示长期有效
+	ExpireUnit int64                 `form:"expireUnit"`  // 过期单位，秒、分钟、小时等,无时间表示长期有效
 	Text       string                `form:"text"`        // 文本内容
+	Code       string                `form:"code"`        // 访问码,存在访问码时，为自定义访问码
 }
 
 type ShareVo struct {
