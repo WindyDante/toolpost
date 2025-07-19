@@ -17,4 +17,5 @@ const (
 	FILE_DIRECTORY_CREATE  = "初始化文件目录失败"
 	SHARE_EXPIRED          = "分享已过期"
 	KEY_NOT_MATCH          = "密钥不匹配"
+	FILE_ALREADY_EXISTS    = "文件已存在"
 )

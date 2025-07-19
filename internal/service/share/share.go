@@ -110,11 +110,34 @@ func isExpired(shareInfo *model.Share) bool {
 }
 
 func (s *ShareService) UploadAnyFile(file model.UploadFile) (model.ShareVo, error) {
+	// 获取本地md5值与数据库中对应的md5值进行对比
+	// 如果存在相同的md5值，则直接返回对应的分享信息
+	md5Val, err := util.CalculateFileMD5(file.File)
+
+	if err != nil {
+		return model.ShareVo{}, err
+	}
+
+	// 检查是否已存在相同的文件
+	shareInfo, err := s.shareRepository.GetShareByMD5(md5Val)
+	if err != nil {
+		return model.ShareVo{}, err
+	}
+
+	if shareInfo != nil {
+		// 如果文件已存在，直接返回已存在的分享信息
+		return model.ShareVo{
+			FileUrl: shareInfo.File,
+			Code:    shareInfo.Code,
+		}, nil
+	}
+
 	var storageShare model.Share
 	if file.File.Size > int64(1024*1024*500) {
 		// 限制文件大小为500MB,不写为常量,仅在此处使用
 		return model.ShareVo{}, errors.New(errModel.FILE_MAX_SIZE_EXCEEDED)
 	}
+
 	// 调用上传的本地工具类,上传后返回url自动拼接
 	url, err := util.UploadFile(file.File)
 	if err != nil {
@@ -136,7 +159,7 @@ func (s *ShareService) UploadAnyFile(file model.UploadFile) (model.ShareVo, erro
 
 	// 设置Share结构体的信息
 	storageShare = model.Share{
-		ID:         cryptoUtil.GenerateUUID(),
+		ID:         md5Val,
 		File:       url,
 		Expire:     file.ExpireTime,
 		ExpireUnit: file.ExpireUnit,

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"crypto/md5"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -16,6 +17,27 @@ import (
 const (
 	DIRECTORY_PATH = "./share"
 )
+
+// 计算文件 MD5 值的辅助函数
+func CalculateFileMD5(fileHeader *multipart.FileHeader) (string, error) {
+	// 打开文件
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	// 创建 MD5 哈希
+	hash := md5.New()
+
+	// 将文件内容拷贝到哈希计算器中
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	// 计算 MD5 值并转换为十六进制字符串
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
 
 func UploadFile(file *multipart.FileHeader) (string, error) {
 	if file == nil {
