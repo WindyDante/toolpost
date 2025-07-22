@@ -96,14 +96,29 @@ const FileTransfer = () => {
     return labelMap[timeValue] || "24小时";
   };
 
+  const getExpirationValues = (timeValue: string) => {
+    // 将前端时间格式转换为后端需要的 expireTime 和 expireUnit
+    const valueMap: { [key: string]: { expireTime: number, expireUnit: number } } = {
+      "1h": { expireTime: 1, expireUnit: 3600 },     // 1小时，单位秒
+      "6h": { expireTime: 6, expireUnit: 3600 },     // 6小时，单位秒
+      "12h": { expireTime: 12, expireUnit: 3600 },   // 12小时，单位秒
+      "24h": { expireTime: 24, expireUnit: 3600 },   // 24小时，单位秒
+      "48h": { expireTime: 48, expireUnit: 3600 },   // 48小时，单位秒
+      "72h": { expireTime: 72, expireUnit: 3600 },   // 72小时，单位秒
+      "7d": { expireTime: 7, expireUnit: 86400 },    // 7天，单位秒（1天=86400秒）
+      "30d": { expireTime: 30, expireUnit: 86400 },  // 30天，单位秒
+    };
+    return valueMap[timeValue] || { expireTime: 24, expireUnit: 3600 };
+  };
+
   const generateRandomCode = () => {
     return Math.random().toString(36).substr(2, 8).toUpperCase();
   };
 
   const markFolderAsDeleted = (folderId: string) => {
-    setSharedFolders(prev => 
-      prev.map(folder => 
-        folder.id === folderId 
+    setSharedFolders(prev =>
+      prev.map(folder =>
+        folder.id === folderId
           ? { ...folder, isDeleted: true }
           : folder
       )
@@ -120,14 +135,14 @@ const FileTransfer = () => {
 
   const handleFileSelect = (selectedFiles: FileList | null, isFolder = false) => {
     if (!selectedFiles) return;
-    
+
     const newFiles = Array.from(selectedFiles);
     setFiles(prev => [...prev, ...newFiles]);
   };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    
+
     const items = Array.from(e.dataTransfer.items);
     const newFiles: File[] = [];
 
@@ -192,14 +207,14 @@ const FileTransfer = () => {
     // 检查是否为阅后即焚文件夹
     if (currentFolder!.burnAfterReading) {
       markFolderAsDeleted(currentFolder!.id);
-      
+
       toast({
         title: "阅后即焚",
         description: "文件已下载，分享已自动删除",
       });
     }
 
-    const filesToDownload = currentFolder!.files.filter(file => 
+    const filesToDownload = currentFolder!.files.filter(file =>
       file.type === 'file' && selectedFiles.includes(file.id)
     );
 
@@ -212,7 +227,7 @@ const FileTransfer = () => {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      
+
       toast({
         title: "下载成功",
         description: `文件 ${file.name} 已下载`,
@@ -220,7 +235,7 @@ const FileTransfer = () => {
     } else {
       // 多个文件打包下载
       const zip = new JSZip();
-      
+
       try {
         const filePromises = filesToDownload.map(async (file) => {
           const response = await fetch(file.url);
@@ -229,7 +244,7 @@ const FileTransfer = () => {
         });
 
         await Promise.all(filePromises);
-        
+
         const zipBlob = await zip.generateAsync({ type: "blob" });
         const url = URL.createObjectURL(zipBlob);
         const a = document.createElement('a');
@@ -253,13 +268,13 @@ const FileTransfer = () => {
         });
       }
     }
-    
+
     setSelectedFiles([]);
   };
 
   const toggleFileSelection = (fileId: string) => {
-    setSelectedFiles(prev => 
-      prev.includes(fileId) 
+    setSelectedFiles(prev =>
+      prev.includes(fileId)
         ? prev.filter(id => id !== fileId)
         : [...prev, fileId]
     );
@@ -269,7 +284,7 @@ const FileTransfer = () => {
     const allFileIds = currentFolder!.files
       .filter(file => file.type === 'file')
       .map(file => file.id);
-      
+
     if (selectedFiles.length === allFileIds.length) {
       setSelectedFiles([]);
     } else {
@@ -281,14 +296,14 @@ const FileTransfer = () => {
     // 检查是否为阅后即焚文件夹
     if (currentFolder!.burnAfterReading) {
       markFolderAsDeleted(currentFolder!.id);
-      
+
       toast({
         title: "阅后即焚",
         description: "文件已下载，分享已自动删除",
       });
     }
 
-    const folderFiles = currentFolder!.files.filter(file => 
+    const folderFiles = currentFolder!.files.filter(file =>
       file.type === 'file' && file.path.startsWith(folderName + '/')
     );
 
@@ -302,7 +317,7 @@ const FileTransfer = () => {
     }
 
     const zip = new JSZip();
-    
+
     try {
       // 为每个文件创建一个下载promise
       const filePromises = folderFiles.map(async (file) => {
@@ -313,7 +328,7 @@ const FileTransfer = () => {
       });
 
       await Promise.all(filePromises);
-      
+
       const zipBlob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
@@ -338,7 +353,7 @@ const FileTransfer = () => {
     }
   };
 
-  const createSharedFolder = () => {
+  const createSharedFolder = async () => {
     if (files.length === 0 && !textContent.trim()) {
       toast({
         title: "请添加内容",
@@ -348,50 +363,113 @@ const FileTransfer = () => {
       return;
     }
 
-    const code = useCustomCode && customCode ? customCode : generateRandomCode();
-    const folderId = Math.random().toString(36).substr(2, 9);
-    
-    const fileItems: FileItem[] = files.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      type: 'file' as const,
-      url: URL.createObjectURL(file),
-      path: file.webkitRelativePath || file.name
-    }));
+    try {
+      // 准备上传数据
+      const formData = new FormData();
 
-    // 组织文件夹结构
-    const organizedFiles = organizeFiles(fileItems);
+      // 添加文件（如果有）
+      if (files.length > 0) {
+        // 目前只支持单文件上传，取第一个文件
+        formData.append('file', files[0]);
+      }
 
-    const expirationMs = getExpirationMilliseconds(expirationTime);
-    const expirationLabel = getExpirationLabel(expirationTime);
+      // 添加文本内容
+      if (textContent.trim()) {
+        formData.append('text', textContent.trim());
+      }
 
-    const newFolder: SharedFolder = {
-      id: folderId,
-      name: `内容分享-${new Date().toLocaleDateString()}`,
-      accessCode: code,
-      files: organizedFiles,
-      textContent: textContent.trim() || undefined,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + expirationMs).toISOString(),
-      burnAfterReading: burnAfterReading,
-      isDeleted: false
-    };
+      // 添加自定义访问码
+      if (useCustomCode && customCode) {
+        formData.append('code', customCode);
+      }
 
-    setSharedFolders(prev => [...prev, newFolder]);
-    setFiles([]);
-    setTextContent("");
-    setAccessCode(code);
-    setCustomCode("");
-    setBurnAfterReading(false);
-    
-    const burnText = burnAfterReading ? "，阅后即焚已启用" : "";
-    const contentType = files.length > 0 && textContent.trim() ? "文件和文字" : 
-                       files.length > 0 ? "文件" : "文字";
-    toast({
-      title: "分享创建成功",
-      description: `${contentType}分享已创建，访问码: ${code}，有效期${expirationLabel}${burnText}`,
-    });
+      // 处理过期时间
+      const { expireTime, expireUnit } = getExpirationValues(expirationTime);
+      formData.append('expireTime', expireTime.toString());
+      formData.append('expireUnit', expireUnit.toString());
+
+      // 调用后端API
+      const response = await fetch('http://localhost:6332/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.code === 1) {
+        // 成功响应
+        const { fileUrl, code } = result.data;
+
+        // 存储到localStorage
+        const shareData = {
+          fileUrl,
+          code,
+          textContent: textContent.trim() || undefined,
+          createdAt: new Date().toISOString(),
+          expirationTime
+        };
+
+        const existingShares = JSON.parse(localStorage.getItem('fileShares') || '[]');
+        existingShares.push(shareData);
+        localStorage.setItem('fileShares', JSON.stringify(existingShares));
+
+        // 创建本地显示的文件夹（用于UI显示）
+        const folderId = Math.random().toString(36).substr(2, 9);
+        const fileItems: FileItem[] = files.map(file => ({
+          id: Math.random().toString(36).substr(2, 9),
+          name: file.name,
+          size: file.size,
+          type: 'file' as const,
+          url: fileUrl,
+          path: file.webkitRelativePath || file.name
+        }));
+
+        const organizedFiles = organizeFiles(fileItems);
+        const expirationMs = getExpirationMilliseconds(expirationTime);
+        const expirationLabel = getExpirationLabel(expirationTime);
+
+        const newFolder: SharedFolder = {
+          id: folderId,
+          name: `内容分享-${new Date().toLocaleDateString()}`,
+          accessCode: code,
+          files: organizedFiles,
+          textContent: textContent.trim() || undefined,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + expirationMs).toISOString(),
+          burnAfterReading: burnAfterReading,
+          isDeleted: false
+        };
+
+        setSharedFolders(prev => [...prev, newFolder]);
+        setFiles([]);
+        setTextContent("");
+        setAccessCode(code);
+        setCustomCode("");
+        setBurnAfterReading(false);
+
+        const burnText = burnAfterReading ? "，阅后即焚已启用" : "";
+        const contentType = files.length > 0 && textContent.trim() ? "文件和文字" :
+          files.length > 0 ? "文件" : "文字";
+        toast({
+          title: "分享创建成功",
+          description: `${contentType}分享已创建，访问码: ${code}，有效期${expirationLabel}${burnText}`,
+        });
+      } else {
+        // 错误响应
+        toast({
+          title: "分享创建失败",
+          description: result.msg || "服务器错误",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "上传失败",
+        description: "网络错误或服务器不可用",
+        variant: "destructive"
+      });
+    }
   };
 
   const organizeFiles = (files: FileItem[]): FileItem[] => {
@@ -412,7 +490,7 @@ const FileTransfer = () => {
     });
 
     const result: FileItem[] = [...rootFiles];
-    
+
     folderMap.forEach((folderFiles, folderName) => {
       result.push({
         id: Math.random().toString(36).substr(2, 9),
@@ -439,7 +517,7 @@ const FileTransfer = () => {
         });
         return;
       }
-      
+
       if (new Date() > new Date(folder.expiresAt)) {
         toast({
           title: "访问失败",
@@ -448,11 +526,11 @@ const FileTransfer = () => {
         });
         return;
       }
-      
+
       setCurrentFolder(folder);
       setAccessingCode("");
       setShowAccessCodeInput(false);
-      
+
       // 如果是阅后即焚文件夹，在查看时就标记为删除
       if (folder.burnAfterReading) {
         markFolderAsDeleted(folder.id);
@@ -502,7 +580,7 @@ const FileTransfer = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
         <Navigation />
-        
+
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-6">
@@ -639,7 +717,7 @@ const FileTransfer = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -811,7 +889,7 @@ const FileTransfer = () => {
                     />
                     <Label htmlFor="customCode">自定义验证码</Label>
                   </div>
-                  
+
                   {useCustomCode && (
                     <Input
                       placeholder="输入自定义验证码"
@@ -833,7 +911,7 @@ const FileTransfer = () => {
                       阅后即焚
                     </Label>
                   </div>
-                  
+
                   {burnAfterReading && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <p className="text-sm text-red-700">
@@ -926,7 +1004,7 @@ const FileTransfer = () => {
                               <Folder className="w-5 h-5 text-blue-500" />
                             )}
                           </div>
-                          
+
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-medium break-words">
@@ -939,13 +1017,13 @@ const FileTransfer = () => {
                                 <span className="text-red-600 text-sm whitespace-nowrap">(已删除)</span>
                               )}
                             </div>
-                            
+
                             <div className="text-sm text-gray-500 space-y-1">
                               <p className="break-words">
-                                {folder.textContent && folder.files.length > 0 
-                                  ? `${folder.files.length} 个文件 + 文字信息` 
-                                  : folder.textContent 
-                                    ? "文字信息" 
+                                {folder.textContent && folder.files.length > 0
+                                  ? `${folder.files.length} 个文件 + 文字信息`
+                                  : folder.textContent
+                                    ? "文字信息"
                                     : `${folder.files.length} 个文件`
                                 }
                               </p>
@@ -961,7 +1039,7 @@ const FileTransfer = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Actions section */}
                         <div className="flex gap-2 flex-wrap md:flex-nowrap md:ml-4">
                           {!folder.isDeleted ? (
