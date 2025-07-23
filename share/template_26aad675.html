@@ -1,0 +1,170 @@
+<div style="margin-top: 200px">
+	<style type="text/css">
+		div,
+		h1,
+		h2,
+		form,
+		fieldset,
+		input,
+		textarea,
+		footer,
+		p {
+
+			margin: 0;
+			padding: 0;
+			border: 0;
+			outline: none;
+
+		}
+
+		#wrap {
+			width: 530px;
+			margin: 20px auto 0;
+			height: 850px;
+		}
+
+		#form_wrap {
+			overflow: hidden;
+			height: 446px;
+			position: relative;
+			top: 0px;
+
+			-webkit-transition: all 1s ease-in-out .3s;
+
+			-moz-transition: all 1s ease-in-out .3s;
+
+			-o-transition: all 1s ease-in-out .3s;
+
+			transition: all 1s ease-in-out .3s;
+		}
+
+
+
+		#form_wrap:before {
+			content: "";
+
+			position: absolute;
+
+			bottom: 128px;
+			left: 0px;
+
+			background: url('https://npm.elemecdn.com/hexo-butterfly-envelope/lib/before.png');
+
+			width: 530px;
+			height: 316px;
+		}
+
+
+
+		#form_wrap:after {
+			content: "";
+			position: absolute;
+
+			bottom: 0px;
+			left: 0;
+
+			background: url('https://npm.elemecdn.com/hexo-butterfly-envelope/lib/after.png');
+
+			width: 530px;
+			height: 260px;
+		}
+
+
+
+		#form_wrap.hide:after,
+		#form_wrap.hide:before {
+			display: none;
+		}
+
+		#form_wrap:hover {
+			height: 880px;
+			top: -200px;
+		}
+
+
+
+
+
+		#boxBig {
+			background: #f7f2ec;
+
+			position: relative;
+			top: 100px;
+			overflow: hidden;
+
+			height: 800px;
+			width: 400px;
+			margin: 0px auto;
+			padding: 20px;
+
+			border: 1px solid #fff;
+
+			border-radius: 3px;
+
+			-moz-border-radius: 3px;
+			-webkit-border-radius: 3px;
+
+			box-shadow: 0px 0px 3px #9d9d9d, inset 0px 0px 27px #fff;
+
+			-moz-box-shadow: 0px 0px 3px #9d9d9d, inset 0px 0px 14px #fff;
+
+			-webkit-box-shadow: 0px 0px 3px #9d9d9d, inset 0px 0px 27px #fff;
+
+			-webkit-transition: all 1s ease-in-out .3s;
+
+			-moz-transition: all 1s ease-in-out .3s;
+
+			-o-transition: all 1s ease-in-out .3s;
+
+			transition: all 1s ease-in-out .3s;
+		}
+
+
+
+
+
+		#form_wrap:hover #boxBig {
+			height: 530px;
+		}
+	</style>
+
+	<div id="wrap">
+
+
+		<div id='form_wrap'>
+
+			<div id="boxBig">
+				<img src="https://npm.elemecdn.com/hexo-butterfly-envelope/lib/violet.jpg"
+					style="width:100%;overflow:hidden;pointer-events:none">
+				<div
+					style="width:100%;background:#f8d1ce;color:#9d2850;border-radius: 10px 10px 0 0;background-image: -moz-linear-gradient(0deg, rgb(67, 198, 184), rgb(255, 209, 244));height: 66px;background: url(https://npm.elemecdn.com/sarakale-assets@v1/Article/email/line034_666x66.png) left top no-repeat;">
+					<p
+						style="font-size:16px;font-weight: bold;text-align:center;word-break:break-all;padding: 23px 32px;margin:0;">
+						您在闲物的邮箱验证码来啦
+					</p>
+				</div>
+				<div class="formmain"
+					style="background:#fff;width:96%;max-width:800px;margin:auto auto;border-radius:5px;border: 1px solid #564f4f59;overflow:hidden;pointer-events:none">
+					<div style="margin:40px auto;width:90%;">
+						<div
+							style="background: #eee;margin:20px 0px;padding:15px;border-radius:5px;font-size:15px;color:#555555;">
+							验证码是：？？？！<br/>听说收到验证码的人今天都会幸运哦
+						</div>
+
+						<img src="https://npm.elemecdn.com/hexo-butterfly-envelope/lib/line.png"
+							style="width:100%;margin:25px auto 5px auto;display:block;pointer-events:none">
+						<p class="bottomhr" style="font-size:12px;text-align:center;color:#999">
+							闲物竭诚为您服务！
+						</p>
+					</div>
+				</div>
+			</div>
+
+
+		</div>
+
+		<div style="position:fixed;height:90px;width:100%;left:0;bottom:10px">
+			<div class="footer-banner" style="width:728px; margin:0px auto"></div>
+		</div>
+	</div>
+</div>

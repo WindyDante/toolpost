@@ -68,6 +68,18 @@ const FileTransfer = () => {
     localStorage.setItem('sharedFolders', JSON.stringify(sharedFolders));
   }, [sharedFolders]);
 
+  // 测试localStorage功能
+  const testLocalStorage = () => {
+    const testData = {
+      'TEST123': 'http://localhost:6332/share/download?key=test&code=TEST123'
+    };
+    localStorage.setItem('downloadLinks', JSON.stringify(testData));
+    console.log('测试数据已保存到localStorage');
+
+    const loaded = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+    console.log('从localStorage加载的数据:', loaded);
+  };
+
   const getExpirationMilliseconds = (timeValue: string) => {
     const timeMap: { [key: string]: number } = {
       "1h": 60 * 60 * 1000,
@@ -192,6 +204,55 @@ const FileTransfer = () => {
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const downloadFileByCode = async (code: string) => {
+    try {
+      // 首先检查localStorage中是否有缓存的下载链接
+      const cachedShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+      if (cachedShares[code]) {
+        // 使用缓存的下载链接
+        const downloadUrl = cachedShares[code];
+        window.open(downloadUrl, '_blank');
+        return;
+      }
+
+      // 调用后端API获取下载链接
+      const response = await fetch(`http://localhost:6332/api/share/${code}`);
+      const result = await response.json();
+
+      if (result.code === 1) {
+        // 成功获取下载链接
+        const downloadUrl = result.data;
+
+        // 存储到localStorage
+        const existingShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+        existingShares[code] = downloadUrl;
+        localStorage.setItem('downloadLinks', JSON.stringify(existingShares));
+
+        // 打开下载链接
+        window.open(downloadUrl, '_blank');
+
+        toast({
+          title: "下载开始",
+          description: `文件下载已开始，访问码: ${code}`,
+        });
+      } else {
+        // 错误响应
+        toast({
+          title: "下载失败",
+          description: result.msg || "分享不存在或已过期",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "下载失败",
+        description: "网络错误或服务器不可用",
+        variant: "destructive"
+      });
+    }
   };
 
   const downloadSelectedFiles = async () => {
@@ -506,48 +567,124 @@ const FileTransfer = () => {
     return result;
   };
 
-  const accessSharedFolder = () => {
-    const folder = sharedFolders.find(f => f.accessCode === accessingCode);
-    if (folder) {
-      if (folder.isDeleted) {
-        toast({
-          title: "访问失败",
-          description: "该分享已被删除（阅后即焚）",
-          variant: "destructive"
-        });
+  const accessSharedFolder = async () => {
+    if (!accessingCode.trim()) {
+      toast({
+        title: "请输入访问码",
+        description: "访问码不能为空",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // 首先检查localStorage中是否有缓存的下载链接
+      const cachedShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+      if (cachedShares[accessingCode]) {
+        // 使用缓存的下载链接
+        const downloadUrl = cachedShares[accessingCode];
+        await handleDownloadWithUrl(downloadUrl, accessingCode);
         return;
       }
 
-      if (new Date() > new Date(folder.expiresAt)) {
-        toast({
-          title: "访问失败",
-          description: "该分享已过期",
-          variant: "destructive"
-        });
-        return;
-      }
+      // 调用后端API获取下载链接
+      const response = await fetch(`http://localhost:6332/api/share/${accessingCode}`);
+      const result = await response.json();
 
-      setCurrentFolder(folder);
-      setAccessingCode("");
-      setShowAccessCodeInput(false);
+      if (result.code === 1) {
+        // 成功获取下载链接
+        const downloadUrl = result.data;
 
-      // 如果是阅后即焚文件夹，在查看时就标记为删除
-      if (folder.burnAfterReading) {
-        markFolderAsDeleted(folder.id);
+        // 存储到localStorage
+        const existingShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+        existingShares[accessingCode] = downloadUrl;
+        localStorage.setItem('downloadLinks', JSON.stringify(existingShares));
+
+        // 处理下载
+        await handleDownloadWithUrl(downloadUrl, accessingCode);
+
         toast({
           title: "访问成功",
-          description: `正在查看: ${folder.name}（阅后即焚已触发）`,
+          description: `获取到分享内容，访问码: ${accessingCode}`,
         });
       } else {
+        // 错误响应
         toast({
-          title: "访问成功",
-          description: `正在查看: ${folder.name}`,
+          title: "访问失败",
+          description: result.msg || "分享不存在或已过期",
+          variant: "destructive"
         });
       }
-    } else {
+    } catch (error) {
+      console.error('Access error:', error);
+
+      // 如果网络错误，尝试从本地查找
+      const folder = sharedFolders.find(f => f.accessCode === accessingCode);
+      if (folder) {
+        if (folder.isDeleted) {
+          toast({
+            title: "访问失败",
+            description: "该分享已被删除（阅后即焚）",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (new Date() > new Date(folder.expiresAt)) {
+          toast({
+            title: "访问失败",
+            description: "该分享已过期",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        setCurrentFolder(folder);
+        setAccessingCode("");
+        setShowAccessCodeInput(false);
+
+        // 如果是阅后即焚文件夹，在查看时就标记为删除
+        if (folder.burnAfterReading) {
+          markFolderAsDeleted(folder.id);
+          toast({
+            title: "访问成功",
+            description: `正在查看: ${folder.name}（阅后即焚已触发）`,
+          });
+        } else {
+          toast({
+            title: "访问成功",
+            description: `正在查看: ${folder.name}`,
+          });
+        }
+      } else {
+        toast({
+          title: "访问失败",
+          description: "网络错误或服务器不可用",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleDownloadWithUrl = async (downloadUrl: string, code: string) => {
+    try {
+      // 创建下载链接
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.target = '_blank';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // 清理访问码输入
+      setAccessingCode("");
+      setShowAccessCodeInput(false);
+    } catch (error) {
+      console.error('Download error:', error);
       toast({
-        title: "访问失败",
-        description: "验证码错误或分享不存在",
+        title: "下载失败",
+        description: "无法下载文件",
         variant: "destructive"
       });
     }
@@ -746,7 +883,18 @@ const FileTransfer = () => {
                   <Button onClick={accessSharedFolder}>
                     访问
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => accessingCode.trim() && downloadFileByCode(accessingCode.trim())}
+                    disabled={!accessingCode.trim()}
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    下载
+                  </Button>
                 </div>
+                <p className="text-sm text-gray-500">
+                  输入验证码后，可以点击"访问"查看内容或直接点击"下载"获取文件
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -963,13 +1111,22 @@ const FileTransfer = () => {
                     <p className="font-semibold text-green-800">验证码: {accessCode}</p>
                     <p className="text-sm text-green-600">请将此验证码分享给需要访问的用户</p>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => copyToClipboard(accessCode)}
-                  >
-                    <Copy className="w-4 h-4 mr-1" />
-                    复制
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => copyToClipboard(accessCode)}
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      复制
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => downloadFileByCode(accessCode)}
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      下载
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1052,6 +1209,15 @@ const FileTransfer = () => {
                               >
                                 <Copy className="w-4 h-4 mr-1" />
                                 <span className="md:inline">复制码</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => downloadFileByCode(folder.accessCode)}
+                                className="flex-1 md:flex-none"
+                              >
+                                <Download className="w-4 h-4 mr-1" />
+                                <span className="md:inline">下载</span>
                               </Button>
                               <Button
                                 variant="outline"
