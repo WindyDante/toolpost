@@ -34,7 +34,10 @@ func (shareHandler *ShareHandler) GetShareDetailByCode() gin.HandlerFunc {
 		}
 
 		// 获取分享详情
-		return res.Response{}
+		return res.Response{
+			Msg:  commonModel.SUCCESS_MESSAGE,
+			Data: detail,
+		}
 	})
 }
 

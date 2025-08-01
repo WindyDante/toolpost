@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	errModel "github.com/WindyDante/toolpost/internal/model/common"
@@ -22,6 +23,64 @@ func NewShareService(shareRepository share.ShareRepositoryInterface) ShareServic
 	return &ShareService{
 		shareRepository: shareRepository,
 	}
+}
+
+// extractOriginalFileName 从文件路径中提取原文件名
+// 例如: "./share/template_26aad675.html" -> "template.html"
+func extractOriginalFileName(filePath string) string {
+	// 如果文件路径为空，返回空字符串
+	if filePath == "" {
+		return ""
+	}
+
+	// 找到最后一个 / 的位置，获取文件名部分
+	lastSlashIndex := strings.LastIndex(filePath, "/")
+	if lastSlashIndex == -1 {
+		lastSlashIndex = strings.LastIndex(filePath, "\\") // 兼容Windows路径
+	}
+
+	var fileName string
+	if lastSlashIndex == -1 {
+		fileName = filePath // 没有路径分隔符，整个就是文件名
+	} else {
+		fileName = filePath[lastSlashIndex+1:] // 获取文件名部分
+	}
+
+	// 从后往前找到第一个 _ 的位置
+	lastUnderscoreIndex := strings.LastIndex(fileName, "_")
+	if lastUnderscoreIndex == -1 {
+		// 没有找到下划线，直接返回原文件名
+		return fileName
+	}
+
+	// 找到文件扩展名的位置
+	lastDotIndex := strings.LastIndex(fileName, ".")
+	if lastDotIndex == -1 || lastDotIndex < lastUnderscoreIndex {
+		// 没有扩展名或扩展名在下划线之前，直接返回下划线之前的部分
+		return fileName[:lastUnderscoreIndex]
+	}
+
+	// 提取原文件名：下划线之前的部分 + 扩展名
+	baseName := fileName[:lastUnderscoreIndex]
+	extension := fileName[lastDotIndex:]
+
+	return baseName + extension
+}
+
+func (s *ShareService) GetShareDetailByCode(code string) (model.ShareDetailVo, error) {
+	// 获取分享信息
+	shareInfo, err := s.shareRepository.GetShareByCode(code)
+	if err != nil {
+		return model.ShareDetailVo{}, err
+	}
+	// 从文件路径中提取原文件名
+	fileName := extractOriginalFileName(shareInfo.File)
+	shareDetail := model.ShareDetailVo{
+		Text:     shareInfo.Text,
+		FileName: fileName,
+	}
+
+	return shareDetail, nil
 }
 
 func (s *ShareService) GetDownloadUrl(key, code string) (string, error) {

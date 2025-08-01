@@ -24,6 +24,11 @@ type UploadFile struct {
 	Code       string                `form:"code"`        // 访问码,存在访问码时，为自定义访问码
 }
 
+type ShareDetailVo struct {
+	Text     string `json:"text"`     // 文本内容
+	FileName string `json:"fileName"` // 文件名
+}
+
 type ShareVo struct {
 	FileUrl string `json:"fileUrl"` // 文件URL
 	Code    string `json:"code"`    // 访问码
