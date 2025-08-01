@@ -66,21 +66,7 @@ const FileTransfer = () => {
   // Save shared folders to localStorage whenever sharedFolders changes
   useEffect(() => {
     localStorage.setItem('sharedFolders', JSON.stringify(sharedFolders));
-  }, [sharedFolders]);
-
-  // 测试localStorage功能
-  const testLocalStorage = () => {
-    const testData = {
-      'TEST123': 'http://localhost:6332/share/download?key=test&code=TEST123'
-    };
-    localStorage.setItem('downloadLinks', JSON.stringify(testData));
-    console.log('测试数据已保存到localStorage');
-
-    const loaded = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
-    console.log('从localStorage加载的数据:', loaded);
-  };
-
-  const getExpirationMilliseconds = (timeValue: string) => {
+  }, [sharedFolders]); const getExpirationMilliseconds = (timeValue: string) => {
     const timeMap: { [key: string]: number } = {
       "1h": 60 * 60 * 1000,
       "6h": 6 * 60 * 60 * 1000,
@@ -204,55 +190,6 @@ const FileTransfer = () => {
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const downloadFileByCode = async (code: string) => {
-    try {
-      // 首先检查localStorage中是否有缓存的下载链接
-      const cachedShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
-      if (cachedShares[code]) {
-        // 使用缓存的下载链接
-        const downloadUrl = cachedShares[code];
-        window.open(downloadUrl, '_blank');
-        return;
-      }
-
-      // 调用后端API获取下载链接
-      const response = await fetch(`http://localhost:6332/api/share/${code}`);
-      const result = await response.json();
-
-      if (result.code === 1) {
-        // 成功获取下载链接
-        const downloadUrl = result.data;
-
-        // 存储到localStorage
-        const existingShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
-        existingShares[code] = downloadUrl;
-        localStorage.setItem('downloadLinks', JSON.stringify(existingShares));
-
-        // 打开下载链接
-        window.open(downloadUrl, '_blank');
-
-        toast({
-          title: "下载开始",
-          description: `文件下载已开始，访问码: ${code}`,
-        });
-      } else {
-        // 错误响应
-        toast({
-          title: "下载失败",
-          description: result.msg || "分享不存在或已过期",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Download error:', error);
-      toast({
-        title: "下载失败",
-        description: "网络错误或服务器不可用",
-        variant: "destructive"
-      });
-    }
   };
 
   const downloadSelectedFiles = async () => {
@@ -883,17 +820,9 @@ const FileTransfer = () => {
                   <Button onClick={accessSharedFolder}>
                     访问
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => accessingCode.trim() && downloadFileByCode(accessingCode.trim())}
-                    disabled={!accessingCode.trim()}
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    下载
-                  </Button>
                 </div>
                 <p className="text-sm text-gray-500">
-                  输入验证码后，可以点击"访问"查看内容或直接点击"下载"获取文件
+                  输入验证码后，点击"访问"即可查看内容或下载文件
                 </p>
               </div>
             </CardContent>
@@ -1111,22 +1040,13 @@ const FileTransfer = () => {
                     <p className="font-semibold text-green-800">验证码: {accessCode}</p>
                     <p className="text-sm text-green-600">请将此验证码分享给需要访问的用户</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => copyToClipboard(accessCode)}
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      复制
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => downloadFileByCode(accessCode)}
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                      下载
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => copyToClipboard(accessCode)}
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    复制
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1209,15 +1129,6 @@ const FileTransfer = () => {
                               >
                                 <Copy className="w-4 h-4 mr-1" />
                                 <span className="md:inline">复制码</span>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => downloadFileByCode(folder.accessCode)}
-                                className="flex-1 md:flex-none"
-                              >
-                                <Download className="w-4 h-4 mr-1" />
-                                <span className="md:inline">下载</span>
                               </Button>
                               <Button
                                 variant="outline"

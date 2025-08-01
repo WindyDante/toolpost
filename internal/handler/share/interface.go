@@ -11,4 +11,7 @@ type ShareHandlerInterface interface {
 
 	// 文件路由下载
 	DownloadFile() gin.HandlerFunc
+
+	// 根据分享码获取分享详情
+	GetShareDetailByCode() gin.HandlerFunc
 }

@@ -20,6 +20,24 @@ func NewShareHandler(shareService share.ShareServiceInterface) *ShareHandler {
 	}
 }
 
+// GetShareDetailByCode 根据访问码获取分享详情
+func (shareHandler *ShareHandler) GetShareDetailByCode() gin.HandlerFunc {
+	return res.Execute(func(ctx *gin.Context) res.Response {
+		code := ctx.Param("code")
+
+		// 根据分享码获取分享详情
+		detail, err := shareHandler.shareService.GetShareDetailByCode(code)
+		if err != nil {
+			return res.Response{
+				Msg: err.Error(),
+			}
+		}
+
+		// 获取分享详情
+		return res.Response{}
+	})
+}
+
 // DownloadFile 获取key和code分析来比对下载路径是否正确
 func (shareHandler *ShareHandler) DownloadFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
