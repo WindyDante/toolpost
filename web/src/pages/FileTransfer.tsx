@@ -219,24 +219,38 @@ const FileTransfer = () => {
     if (filesToDownload.length === 1) {
       // 单个文件直接下载
       const file = filesToDownload[0];
-      const a = document.createElement('a');
-      a.href = file.url;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
 
-      toast({
-        title: "下载成功",
-        description: `文件 ${file.name} 已下载`,
-      });
+      // 如果文件URL为空，说明是通过分享码访问的，需要获取下载链接
+      if (!file.url) {
+        await downloadFileByShareCode(currentFolder!.accessCode);
+      } else {
+        // 本地文件直接下载
+        const a = document.createElement('a');
+        a.href = file.url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        toast({
+          title: "下载成功",
+          description: `文件 ${file.name} 已下载`,
+        });
+      }
     } else {
       // 多个文件打包下载
       const zip = new JSZip();
 
       try {
         const filePromises = filesToDownload.map(async (file) => {
-          const response = await fetch(file.url);
+          let fileUrl = file.url;
+
+          // 如果文件URL为空，需要通过分享码获取
+          if (!fileUrl) {
+            fileUrl = await getDownloadUrlByShareCode(currentFolder!.accessCode);
+          }
+
+          const response = await fetch(fileUrl);
           const blob = await response.blob();
           zip.file(file.name, blob);
         });
@@ -515,30 +529,37 @@ const FileTransfer = () => {
     }
 
     try {
-      // 首先检查localStorage中是否有缓存的下载链接
-      const cachedShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
-      if (cachedShares[accessingCode]) {
-        // 使用缓存的下载链接
-        const downloadUrl = cachedShares[accessingCode];
-        await handleDownloadWithUrl(downloadUrl, accessingCode);
+      // 首先检查localStorage中是否有缓存的分享详情
+      const cachedDetails = JSON.parse(localStorage.getItem('shareDetails') || '{}');
+      if (cachedDetails[accessingCode]) {
+        // 使用缓存的分享详情
+        const shareDetail = cachedDetails[accessingCode];
+        await showShareDetail(shareDetail);
         return;
       }
 
-      // 调用后端API获取下载链接
-      const response = await fetch(`http://localhost:6332/api/share/${accessingCode}`);
+      // 调用后端API获取分享详情
+      const response = await fetch(`http://localhost:6332/api/share/detail/${accessingCode}`);
       const result = await response.json();
 
       if (result.code === 1) {
-        // 成功获取下载链接
-        const downloadUrl = result.data;
+        // 成功获取分享详情
+        const shareDetail = {
+          code: accessingCode,
+          text: result.data.text || '',
+          fileName: result.data.fileName || '',
+          hasFile: !!result.data.fileName,
+          hasText: !!result.data.text,
+          createdAt: new Date().toISOString()
+        };
 
         // 存储到localStorage
-        const existingShares = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
-        existingShares[accessingCode] = downloadUrl;
-        localStorage.setItem('downloadLinks', JSON.stringify(existingShares));
+        const existingDetails = JSON.parse(localStorage.getItem('shareDetails') || '{}');
+        existingDetails[accessingCode] = shareDetail;
+        localStorage.setItem('shareDetails', JSON.stringify(existingDetails));
 
-        // 处理下载
-        await handleDownloadWithUrl(downloadUrl, accessingCode);
+        // 显示分享详情
+        await showShareDetail(shareDetail);
 
         toast({
           title: "访问成功",
@@ -600,6 +621,106 @@ const FileTransfer = () => {
           variant: "destructive"
         });
       }
+    }
+  };
+
+  const showShareDetail = async (shareDetail: any) => {
+    // 创建一个临时的文件夹对象来显示分享详情
+    const tempFolder: SharedFolder = {
+      id: `share_${shareDetail.code}`,
+      name: shareDetail.fileName ? `文件分享: ${shareDetail.fileName}` : '文字分享',
+      accessCode: shareDetail.code,
+      files: shareDetail.hasFile ? [{
+        id: `file_${shareDetail.code}`,
+        name: shareDetail.fileName,
+        size: 0,
+        type: 'file' as const,
+        url: '', // 这个会在下载时动态获取
+        path: shareDetail.fileName
+      }] : [],
+      textContent: shareDetail.text || undefined,
+      createdAt: shareDetail.createdAt,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 默认24小时过期
+      burnAfterReading: false,
+      isDeleted: false
+    };
+
+    setCurrentFolder(tempFolder);
+    setAccessingCode("");
+    setShowAccessCodeInput(false);
+  };
+
+  const downloadFileByShareCode = async (code: string) => {
+    try {
+      // 首先检查localStorage中是否有缓存的下载链接
+      const cachedLinks = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+      if (cachedLinks[code]) {
+        // 使用缓存的下载链接
+        window.open(cachedLinks[code], '_blank');
+        return;
+      }
+
+      // 调用后端API获取下载链接
+      const response = await fetch(`http://localhost:6332/api/share/${code}`);
+      const result = await response.json();
+
+      if (result.code === 1) {
+        // 成功获取下载链接
+        const downloadUrl = result.data;
+
+        // 存储到localStorage
+        const existingLinks = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+        existingLinks[code] = downloadUrl;
+        localStorage.setItem('downloadLinks', JSON.stringify(existingLinks));
+
+        // 打开下载链接
+        window.open(downloadUrl, '_blank');
+
+        toast({
+          title: "下载开始",
+          description: "文件下载已开始",
+        });
+      } else {
+        throw new Error(result.msg || "获取下载链接失败");
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "下载失败",
+        description: "无法获取下载链接",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getDownloadUrlByShareCode = async (code: string): Promise<string> => {
+    try {
+      // 首先检查localStorage中是否有缓存的下载链接
+      const cachedLinks = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+      if (cachedLinks[code]) {
+        return cachedLinks[code];
+      }
+
+      // 调用后端API获取下载链接
+      const response = await fetch(`http://localhost:6332/api/share/${code}`);
+      const result = await response.json();
+
+      if (result.code === 1) {
+        // 成功获取下载链接
+        const downloadUrl = result.data;
+
+        // 存储到localStorage
+        const existingLinks = JSON.parse(localStorage.getItem('downloadLinks') || '{}');
+        existingLinks[code] = downloadUrl;
+        localStorage.setItem('downloadLinks', JSON.stringify(existingLinks));
+
+        return downloadUrl;
+      } else {
+        throw new Error(result.msg || "获取下载链接失败");
+      }
+    } catch (error) {
+      console.error('Get download URL error:', error);
+      throw error;
     }
   };
 
@@ -736,7 +857,6 @@ const FileTransfer = () => {
                           />
                         </TableHead>
                         <TableHead>名称</TableHead>
-                        <TableHead>大小</TableHead>
                         <TableHead>操作</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -753,7 +873,6 @@ const FileTransfer = () => {
                             <FileText className="w-4 h-4 text-green-500" />
                             {file.name}
                           </TableCell>
-                          <TableCell>{formatFileSize(file.size)}</TableCell>
                           <TableCell>
                             <Button
                               variant="outline"
